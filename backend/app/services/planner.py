@@ -2,6 +2,7 @@ from app.database import db
 from datetime import datetime
 import httpx
 from app.schemas.plan import GWSquad, PlanCreate
+from bson import ObjectId
 
 FPL_ID = 2322892
 
@@ -61,4 +62,22 @@ async def create_plan(user_id: str, title: str):
 
     result = await db.plans.insert_one(plan)
     plan["_id"] = str(result.inserted_id)
+    return plan
+
+async def fetch_user_plans(user_id: str):
+    cursor = db.plans.find({"user_id": user_id})
+    plans = await cursor.to_list(length=None)
+
+    for plan in plans:
+        plan["_id"] = str(plan["_id"])
+
+    return plans
+
+async def fetch_plan(id: str):
+    plan = await db.plans.find_one({"_id": ObjectId(id)})
+
+    if plan is None:
+        raise HTTPException(status_code=404, detail="Plan not found")
+
+    plan["_id"] = str(plan["_id"])
     return plan
